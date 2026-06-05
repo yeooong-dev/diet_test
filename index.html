@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      property="og:description"
+      content="간단한 테스트로 나에게 맞는 다이어트 단계를 확인해보세요."
+    />
+    <meta
+      property="og:image"
+      content="https://green-diettest.netlify.app/green.png"
+    />
+    <meta property="og:url" content="https://green-diettest.netlify.app" />
+    <meta property="og:type" content="website" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>다이어트 단계 추천받기 | UK백비한의원</title>
+    <style>
+      body {
+        margin: 0;
+        background: #f7f7f7;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+          "Malgun Gothic", "Noto Sans KR", sans-serif;
+      }
+      .diet-test-wrap {
+        text-align: center;
+        margin: 60px 20px;
+      }
+      .diet-open-btn {
+        display: inline-block;
+        padding: 16px 28px;
+        background: #111;
+        color: #fff;
+        border-radius: 12px;
+        cursor: pointer;
+        font-weight: 700;
+      }
+      .diet-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .diet-modal.active {
+        display: flex;
+      }
+      .diet-box {
+        width: 100%;
+        max-width: 520px;
+        background: #fff;
+        border-radius: 16px;
+        padding: 24px;
+        position: relative;
+        box-sizing: border-box;
+      }
+      .close {
+        position: absolute;
+        right: 12px;
+        top: 10px;
+        font-size: 24px;
+        cursor: pointer;
+        border: none;
+        background: none;
+      }
+      .step {
+        font-size: 13px;
+        color: #888;
+        margin-bottom: 12px;
+      }
+      .question {
+        font-size: 22px;
+        font-weight: 700;
+        line-height: 1.5;
+        margin-bottom: 20px;
+        word-break: keep-all;
+      }
+      .answer-wrap {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .answer-btn {
+        flex: 1;
+        min-width: 110px;
+        padding: 14px;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 700;
+        background: #fff;
+        text-align: center;
+        box-sizing: border-box;
+      }
+      .answer-btn:hover {
+        border-color: #111;
+      }
+      .result-title {
+        font-size: 24px;
+        font-weight: 800;
+        margin-bottom: 10px;
+      }
+      .result-desc {
+        font-size: 16px;
+        line-height: 1.6;
+      }
+      .notice {
+        margin-top: 12px;
+        font-size: 13px;
+        color: #888;
+        line-height: 1.6;
+        word-break: keep-all;
+      }
+      .btn-group {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .confirm-btn {
+        background: #111;
+        color: #fff !important;
+        padding: 14px;
+        border-radius: 10px;
+        text-align: center;
+        font-weight: 700;
+        box-sizing: border-box;
+        border: none;
+        cursor: pointer;
+      }
+      .restart {
+        background: #eee;
+        padding: 14px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="diet-test-wrap">
+      <div class="diet-open-btn" id="startBtn">다이어트 단계 추천받기</div>
+    </div>
+
+    <div class="diet-modal" id="modal">
+      <div class="diet-box">
+        <button class="close" id="closeBtn" type="button">&times;</button>
+
+        <div id="quiz">
+          <div class="step" id="stepText"></div>
+          <div id="q" class="question"></div>
+          <div class="answer-wrap" id="answers"></div>
+        </div>
+
+        <div id="result" style="display: none">
+          <div id="title" class="result-title"></div>
+          <div id="desc" class="result-desc"></div>
+
+          <div class="notice">
+            본 결과는 참고용 간편 추천이며, 실제 복용 단계는 상담 후 개인 상태에
+            따라 조정됩니다.
+          </div>
+
+          <div class="btn-group">
+            <button class="confirm-btn" id="confirmBtn" type="button">
+              확인
+            </button>
+            <button class="restart" id="restart" type="button">
+              다시 테스트하기
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const baseQuestions = [
+        {
+          key: "q1",
+          q: "다이어트한약 복용경험이 있나요?",
+          answers: ["없음", "1단계", "2단계", "3단계", "4단계"],
+        },
+        {
+          key: "q2",
+          q: "카페인에 예민한가요?",
+          answers: ["아니요", "보통", "네"],
+        },
+        {
+          key: "q3",
+          q: "최근 3개월 이내 5KG 이상 감량한 적이 있나요?",
+          answers: ["아니요", "네"],
+        },
+        {
+          key: "q4",
+          q: "식욕억제가 어려운가요?",
+          answers: ["아니요", "보통", "네"],
+        },
+        {
+          key: "q5",
+          q: "강하고 빠른 감량을 원하시나요?",
+          answers: ["아니요", "네"],
+        },
+      ];
+
+      const extraQuestion = {
+        key: "q1_2",
+        q: "복용기간은 얼마나 되나요?",
+        answers: ["1-3개월", "4-6개월", "7-12개월", "1년 이상"],
+      };
+
+      let questions = [];
+      let i = 0;
+      let ans = {};
+
+      const modal = document.getElementById("modal");
+      const qEl = document.getElementById("q");
+      const stepText = document.getElementById("stepText");
+      const answersEl = document.getElementById("answers");
+      const quizEl = document.getElementById("quiz");
+      const resultEl = document.getElementById("result");
+      const titleEl = document.getElementById("title");
+      const descEl = document.getElementById("desc");
+
+      document.getElementById("startBtn").onclick = () => {
+        resetTest();
+        modal.classList.add("active");
+        show();
+      };
+
+      document.getElementById("closeBtn").onclick = () =>
+        modal.classList.remove("active");
+      document.getElementById("restart").onclick = () => {
+        resetTest();
+        show();
+      };
+      document.getElementById("confirmBtn").onclick = () =>
+        modal.classList.remove("active");
+
+      modal.addEventListener("click", function (e) {
+        if (e.target === modal) modal.classList.remove("active");
+      });
+
+      function buildQuestions() {
+        questions = [...baseQuestions];
+
+        if (ans.q1 !== undefined && ans.q1 !== 0) {
+          questions.splice(1, 0, extraQuestion);
+        }
+      }
+
+      function resetTest() {
+        ans = {};
+        buildQuestions();
+        i = 0;
+        quizEl.style.display = "block";
+        resultEl.style.display = "none";
+      }
+
+      function show() {
+        buildQuestions();
+
+        if (i >= questions.length) {
+          result();
+          return;
+        }
+
+        stepText.innerText = i + 1 + " / " + questions.length;
+        qEl.innerText = questions[i].q;
+        renderAnswers();
+      }
+
+      function renderAnswers() {
+        answersEl.innerHTML = "";
+
+        questions[i].answers.forEach((txt, idx) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "answer-btn";
+          btn.innerText = txt;
+          btn.onclick = () => answer(idx);
+          answersEl.appendChild(btn);
+        });
+      }
+
+      function answer(v) {
+        const currentKey = questions[i].key;
+        ans[currentKey] = v;
+
+        if (currentKey === "q1") {
+          const wasExtraIncluded = questions.some(
+            (item) => item.key === "q1_2",
+          );
+          buildQuestions();
+          const isExtraIncluded = questions.some((item) => item.key === "q1_2");
+
+          if (!wasExtraIncluded && isExtraIncluded) {
+            i++;
+            show();
+            return;
+          }
+        }
+
+        i++;
+
+        if (i < questions.length) {
+          show();
+        } else {
+          result();
+        }
+      }
+
+      function setResult(level, desc) {
+        titleEl.innerText = level + "단계 추천";
+        descEl.innerText = desc;
+      }
+
+      function getMaxLevelByQ1() {
+        if (ans.q1 === 0) return 1;
+        if (ans.q1 === 1) return 2;
+        if (ans.q1 === 2) return 3;
+        if (ans.q1 === 3) return 4;
+        return 5;
+      }
+
+      function result() {
+        quizEl.style.display = "none";
+        resultEl.style.display = "block";
+
+        const descs = [
+          "",
+          "처음 시작하거나 부담이 적은 적응 단계를 추천합니다.",
+          "무리 없이 감량 효과를 높여가는 표준 단계를 추천합니다.",
+          "정체기 돌파와 집중 관리가 필요한 단계를 추천합니다.",
+          "강한 식욕 조절과 고강도 감량 관리가 필요한 단계를 추천합니다.",
+          "4단계 이후 체감도가 낮거나, 보다 집중적인 관리가 필요한 최고 단계를 추천합니다.",
+        ];
+
+        // 없음 선택 시 무조건 1단계까지만
+        if (ans.q1 === 0) {
+          setResult(1, descs[1]);
+          return;
+        }
+
+        let base;
+        if (ans.q1 === 1) base = 1;
+        else if (ans.q1 === 2) base = 2;
+        else if (ans.q1 === 3) base = 3;
+        else base = 4;
+
+        let adjust = 0;
+
+        // 복용기간 문항은 어떤 선택이든 +1단계 역할
+        if (ans.q1_2 !== undefined) adjust += 1;
+
+        // 1년 이상이면 강한 상향 요인이지만, 최종 제한은 최대 +1단계로 유지
+        if (ans.q1_2 === 3) adjust += 1;
+
+        // 카페인 예민하면 하향
+        if (ans.q2 === 2) adjust -= 1;
+        else if (ans.q2 === 1) adjust -= 0.5;
+
+        // 최근 5kg 이상 감량 경험
+        if (ans.q3 === 1) adjust += 0.5;
+
+        // 식욕억제 어려움
+        if (ans.q4 === 1) adjust += 0.5;
+        else if (ans.q4 === 2) adjust += 1;
+
+        // 강하고 빠른 감량 원함
+        if (ans.q5 === 1) adjust += 1;
+
+        let finalLevel = Math.round(base + adjust);
+
+        if (finalLevel < 1) finalLevel = 1;
+        if (finalLevel > 5) finalLevel = 5;
+
+        // 1번에서 정한 기존 단계 기준 최대 +1단계까지만 제한
+        const maxLevelByQ1 = getMaxLevelByQ1();
+
+        if (finalLevel > maxLevelByQ1) {
+          finalLevel = maxLevelByQ1;
+        }
+
+        setResult(finalLevel, descs[finalLevel]);
+      }
+
+      resetTest();
+    </script>
+  </body>
+</html>
