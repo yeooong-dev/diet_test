@@ -81,6 +81,15 @@
         margin-bottom: 20px;
         word-break: keep-all;
       }
+      .question-sub {
+        display: none;
+        margin-top: -12px;
+        margin-bottom: 20px;
+        font-size: 13px;
+        font-weight: 400;
+        color: #888;
+        line-height: 1.4;
+      }
       .answer-wrap {
         display: flex;
         gap: 10px;
@@ -156,6 +165,7 @@
         <div id="quiz">
           <div class="step" id="stepText"></div>
           <div id="q" class="question"></div>
+          <div id="qSub" class="question-sub"></div>
           <div class="answer-wrap" id="answers"></div>
         </div>
 
@@ -184,7 +194,8 @@
       const baseQuestions = [
         {
           key: "q1",
-          q: "다이어트한약 복용경험이 있나요?",
+          q: "병원에서 처방받은 다이어트한약 복용 경험이 있나요?",
+          sub: "*건강기능식품 제외",
           answers: ["없음", "1단계", "2단계", "3단계", "4단계"],
         },
         {
@@ -221,6 +232,7 @@
 
       const modal = document.getElementById("modal");
       const qEl = document.getElementById("q");
+      const qSubEl = document.getElementById("qSub");
       const stepText = document.getElementById("stepText");
       const answersEl = document.getElementById("answers");
       const quizEl = document.getElementById("quiz");
@@ -273,6 +285,15 @@
 
         stepText.innerText = i + 1 + " / " + questions.length;
         qEl.innerText = questions[i].q;
+
+        if (questions[i].sub) {
+          qSubEl.innerText = questions[i].sub;
+          qSubEl.style.display = "block";
+        } else {
+          qSubEl.innerText = "";
+          qSubEl.style.display = "none";
+        }
+
         renderAnswers();
       }
 
